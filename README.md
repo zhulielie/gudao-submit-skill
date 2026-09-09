@@ -2,8 +2,8 @@
 
 > 一句话:**让 AI 帮你把做好的网页游戏发到 [鼓捣星球](https://gudao.games)。**
 
-鼓捣星球是个作品站 —— AI 做的网页游戏和小工具,传上去过审后点开就能玩。
-逛的人里很多是小学生。**一个 60 行的换算器和两万行的游戏,在这个站上是平等的作品。**
+鼓捣星球是个创作者的作品站 —— 自己做的、或者带着 AI 做的网页游戏和小工具,
+传上去过审后点开就能玩。**一个 60 行的换算器和两万行的游戏,在这个站上是平等的作品。**
 
 装上这个 skill 之后,你只要跟 AI 说人话:
 
@@ -18,16 +18,25 @@ AI 会自动知道:平台的作品跑在 `default-src 'none'` 底下连不了外
 
 ## 装
 
-**Claude Code / Codex CLI / 任何读 `SKILL.md` 的 agent:**
+**Claude Code(推荐,一行装完,以后 `/plugin update` 就能更新):**
 
 ```bash
-git clone https://github.com/zhulielie/gudao-submit-skill ~/.claude/skills/gudao-submit
+/plugin marketplace add zhulielie/gudao-submit-skill
+/plugin install gudao-submit@gudao-games
 ```
 
-Windows:
+**Codex CLI / 任何读 `SKILL.md` 的 agent** —— 直接把技能那一层拷过去:
+
+```bash
+git clone https://github.com/zhulielie/gudao-submit-skill /tmp/gudao
+cp -r /tmp/gudao/plugins/gudao-submit/skills/gudao-submit ~/.claude/skills/
+```
+
+Windows(PowerShell):
 
 ```powershell
-git clone https://github.com/zhulielie/gudao-submit-skill "$env:USERPROFILE\.claude\skills\gudao-submit"
+git clone https://github.com/zhulielie/gudao-submit-skill "$env:TEMP\gudao"
+Copy-Item -Recurse "$env:TEMP\gudao\plugins\gudao-submit\skills\gudao-submit" "$env:USERPROFILE\.claude\skills\"
 ```
 
 装好后跟 AI 说「帮我发到鼓捣星球」就会自动用上。
@@ -55,11 +64,15 @@ connect-src 'none'; frame-src 'none'; object-src 'none'
 
 ### 2 · 交之前自检
 
+(`scripts/` 在技能目录里 —— 仓库里的完整路径是
+`plugins/gudao-submit/skills/gudao-submit/scripts/`。)
+
 ```bash
 python scripts/preflight.py <作品文件夹>
 ```
 
-离线扫一遍,不联网、不改文件:
+**扫描完全离线**,不改任何文件。跑完会去站上比一次规矩的指纹
+(只读两个公开的文本文件,不带身份;加 `--不联网` 可以关掉):
 
 | 查什么 | 判成什么 |
 |---|---|

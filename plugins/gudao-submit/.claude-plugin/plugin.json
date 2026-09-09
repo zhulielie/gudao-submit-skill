@@ -1,0 +1,13 @@
+{
+  "name": "gudao-submit",
+  "description": "做网页游戏或网页小工具,并发布到鼓捣星球(gudao.games):离线自检、打包、投稿。Build and publish a browser game or web tool to Gudao Planet (gudao.games).",
+  "version": "1.1.0",
+  "author": {
+    "name": "鼓捣星球",
+    "url": "https://gudao.games"
+  },
+  "homepage": "https://gudao.games/kit.txt",
+  "repository": "https://github.com/zhulielie/gudao-submit-skill",
+  "license": "MIT",
+  "keywords": ["game", "web", "publishing", "html5", "chinese", "gudao"]
+}
