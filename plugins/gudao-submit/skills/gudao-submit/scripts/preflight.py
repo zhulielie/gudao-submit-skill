@@ -58,12 +58,51 @@ NET_API = re.compile(
 NAMESPACE_OK = re.compile(
     r"""(?:xmlns|xmlns:\w+|xml:base)\s*=\s*["']\s*https?://""", re.I)
 
+# ── 不该跟着作品一起传上去的文件 ────────────────────────────────────
+#  这是这个脚本最要紧的一条。打包是**整个文件夹原样打包**,
+#  作品目录里顺手放的 .env、密钥、导出的数据库,会跟着传上去,
+#  过审之后就是公开的 —— 而且撤不回来。
+#  所以这一类**当硬错**:宁可让人多删一次文件,也不能让密钥公开。
+SECRET_NAMES = {
+    ".env", ".env.local", ".env.production", ".env.development",
+    ".npmrc", ".netrc", ".pypirc", ".htpasswd", ".git-credentials",
+    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+    "credentials", "credentials.json", "secrets.json", "service-account.json",
+    "settings.local.json", "config.local.json", "local.settings.json",
+}
+SECRET_SUFFIX = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore",
+                 ".ppk", ".asc", ".gpg", ".kdbx",
+                 ".sqlite", ".sqlite3", ".db", ".mdb", ".bak", ".dump", ".sql")
+SECRET_PREFIX = (".env.",)
+
+
+def looks_secret(rel):
+    """这个文件名像不像「不该公开的东西」。只看名字,不看内容。"""
+    name = rel.rsplit("/", 1)[-1]
+    low = name.lower()
+    if low in SECRET_NAMES:
+        return "密钥/口令类文件"
+    if low.startswith(SECRET_PREFIX):
+        return "环境变量文件(里面常有密钥)"
+    for suf in SECRET_SUFFIX:
+        if low.endswith(suf):
+            return "密钥/数据库/备份类文件(%s)" % suf
+    return None
+
+
 # ── 个人信息:只报「要人看一眼」,不当硬错 ──────────────────────────
 #  「你叫什么名字」给角色起名是正常的,「请输入真实姓名」不是。
 #  机器分不清这两个,所以这里只挑出来给人看。
 PII_WORDS = ("真实姓名", "真名", "学校", "班级", "手机号", "电话号",
              "家庭住址", "身份证", "QQ号", "微信号", "联系方式")
 PII_NEARBY = re.compile(r"""<input|<textarea|placeholder|prompt\s*\(|请输入|请填写""")
+
+# 写死在正文里的真号码,旁边没有输入框也算 —— 前面漏过一份
+# 「妈妈的手机号 138…,我家住…」那样的笔记,那正是红线要挡的东西。
+PII_LITERAL = (
+    (re.compile(r"""(?<!\d)1[3-9]\d{9}(?!\d)"""), "像手机号的 11 位数字"),
+    (re.compile(r"""(?<!\d)\d{17}[\dXx](?!\d)"""), "像身份证号的 18 位"),
+)
 
 
 def walk(root):
@@ -123,6 +162,11 @@ def scan_text(path, rel, errors, warns):
                 if w in line:
                     warns.append((rel, i, "可能在问「%s」" % w, line.strip()[:110]))
                     break
+            continue
+        for rx, why in PII_LITERAL:
+            if rx.search(probe):
+                warns.append((rel, i, "正文里写着%s" % why, line.strip()[:110]))
+                break
 
 
 def rules_note(offline):
@@ -200,7 +244,15 @@ def main():
         errors.append(("(整个包)", 0, "解开后超过 96MB",
                        "现在 %.1f MB" % (total / 1048576)))
 
-    # ③ 逐个文本文件扫红线
+    # ③ 不该跟着传上去的文件(硬错)——**在扫内容之前先挑出来**
+    for p in files:
+        rel = os.path.relpath(p, root).replace("\\", "/")
+        why = looks_secret(rel)
+        if why:
+            errors.append((rel, 0, "这个文件不该跟着作品传上去(%s)" % why,
+                           "整个文件夹是原样打包的;过审后作品是公开的。删掉它,或换个干净的文件夹再交"))
+
+    # ④ 逐个文本文件扫红线
     for p in files:
         if os.path.splitext(p)[1].lower() not in TEXT_EXT:
             continue

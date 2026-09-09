@@ -38,20 +38,48 @@ FIT_CHOICES = ("fixed", "fill")
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".vscode", ".idea"}
 
 
+def _looks_secret(rel):
+    """和自检用同一份名单 —— 两处判得不一样,等于没判。"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import preflight
+        return preflight.looks_secret(rel)
+    except Exception:                                       # noqa: BLE001
+        # 自检脚本不在旁边时的兜底,只认最要命的那几个
+        name = rel.rsplit("/", 1)[-1].lower()
+        if name.startswith(".env") or name.endswith((".pem", ".key")):
+            return "密钥类文件"
+        return None
+
+
 def pack(root):
-    """把作品目录压成 zip。返回 (zip 字节, 文件数)。"""
+    """把作品目录压成 zip。返回 (zip 字节, 文件清单, 可疑清单)。
+
+    ⚠ **这是整个文件夹原样打包** —— 作品目录里顺手放的 .env、密钥、导出的
+      数据库都会跟着走,过审之后就是公开的。所以这里一并把可疑的挑出来,
+      交给调用方拦下。软链接不跟进去(跟进去会把链接指向的真文件打包)。
+    """
     buf = io.BytesIO()
-    n = 0
+    names, risky = [], []
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+            dirnames[:] = [d for d in dirnames
+                           if d not in SKIP_DIRS
+                           and not os.path.islink(os.path.join(dirpath, d))]
             for fn in filenames:
                 if fn == ".DS_Store":
                     continue
                 full = os.path.join(dirpath, fn)
-                z.write(full, os.path.relpath(full, root).replace("\\", "/"))
-                n += 1
-    return buf.getvalue(), n
+                rel = os.path.relpath(full, root).replace("\\", "/")
+                if os.path.islink(full):
+                    risky.append((rel, "软链接(没打包;它指向文件夹外面的东西)"))
+                    continue
+                z.write(full, rel)
+                names.append(rel)
+                why = _looks_secret(rel)
+                if why:
+                    risky.append((rel, why))
+    return buf.getvalue(), names, risky
 
 
 def main():
@@ -78,6 +106,10 @@ def main():
                          "**改编别人必须填**,而且要真的改了东西")
     ap.add_argument("--parent", default="",
                     help="要更新的作品编号;带了就是「某件的新版」")
+    ap.add_argument("--我知道这些要公开", dest="ship_risky", action="store_true",
+                    help="明知道包里有 .env / 密钥这类文件,仍然要传(几乎从不该用)")
+    ap.add_argument("--files", dest="show_files", action="store_true",
+                    help="把要传的文件逐个列出来(--dry 会自动列)")
     ap.add_argument("--dry", action="store_true",
                     help="只打印将要提交的东西,**不发请求**")
     a = ap.parse_args()
@@ -98,7 +130,22 @@ def main():
         print("✗ 标题最多 24 个字,现在 %d 个" % len(a.title))
         return 1
 
-    data, count = pack(root)
+    data, names, risky = pack(root)
+    count = len(names)
+    if risky:
+        print("✗ 这些东西不该跟着作品传上去:")
+        for rel, why in risky[:20]:
+            print("    %-44s %s" % (rel, why))
+        if len(risky) > 20:
+            print("    ...还有 %d 个" % (len(risky) - 20))
+        print()
+        print("  **整个文件夹是原样打包的,过审之后作品是公开的。**")
+        print("  把它们删掉,或者把作品单独拷进一个干净的文件夹再交。")
+        print("  (确实是作品要用的,加 --我知道这些要公开 再跑一次)")
+        if not a.ship_risky:
+            return 1
+        print("  ⚠ 你加了 --我知道这些要公开,照传。")
+        print()
     if len(data) > ZIP_MAX:
         print("✗ 压缩包 %.1f MB,超过 24MB 上限" % (len(data) / 1048576))
         return 1
@@ -167,6 +214,13 @@ def main():
                               else "**没读到**"))
     print("-" * 60)
 
+    if a.dry or a.show_files:
+        print("  这 %d 个文件会一起传上去:" % count)
+        for rel in names[:60]:
+            print("      %s" % rel)
+        if count > 60:
+            print("      ...还有 %d 个" % (count - 60))
+        print("-" * 60)
     if a.dry:
         print("(--dry:只看看,没发请求)")
         return 0
