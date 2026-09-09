@@ -1,0 +1,11 @@
+{
+  "打包日": "2026-09-09",
+  "kit.txt": {
+    "sha256": "e5cd415b9feb1c2c7beb452d2f8764ebc09405e2e2a3ad741dfefba2b95bad30",
+    "bytes": 42230
+  },
+  "api.txt": {
+    "sha256": "109ceaac50b8af7a202fb963c4f64ca625de20c00008b4f7e4a5e7a4e7c49c66",
+    "bytes": 20279
+  }
+}

@@ -5,12 +5,16 @@
 **外部资源一个都取不到,而你本地测的时候一切正常**。
 等传上去被退回,已经浪费了一轮。这个脚本把能机器查的那部分先查掉。
 
+**扫描本身完全离线**,不联网、不改任何文件。只有跑完之后会去站上取一次
+`kit.txt` / `api.txt` 的指纹,看这份包里的规矩过期没有(不带身份、不发数据,
+连不上就说连不上)。加 `--不联网` 连这一步也不做。
+
 退出码:
   0  干净,可以交
   1  **肯定过不了**(外部网址 / 网络 API / 缺 index.html / 超限)—— 先改代码
   2  没有硬错,但有几处**要人看一眼**(可能在收集个人信息)
 
-用法:  python preflight.py <作品文件夹>
+用法:  python preflight.py <作品文件夹> [--不联网]
 """
 import os
 import re
@@ -121,11 +125,36 @@ def scan_text(path, rel, errors, warns):
                     break
 
 
+def rules_note(offline):
+    """跑完说一句:这份包里的规矩过期没有。
+
+    ⚠ 它**不许影响退出码**。自检的结论只由作品本身决定;
+      规矩新不新是另一件事,说出来给人听,不替人做判断。
+    """
+    if offline:
+        print()
+        print("· 没查站上的规矩(你加了 --不联网)。交之前自己读一遍 "
+              "https://gudao.games/kit.txt")
+        return
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import rules_check
+        state, msg = rules_check.report()
+        if msg:
+            print()
+            print(msg)
+    except Exception:                                      # noqa: BLE001
+        print()
+        print("· 没能查站上的规矩,**不知道有没有改**。别当成最新的。")
+
+
 def main():
-    if len(sys.argv) < 2:
-        print("用法: python preflight.py <作品文件夹>")
+    argv = [a for a in sys.argv[1:] if not a.startswith("--")]
+    offline = ("--不联网" in sys.argv) or ("--offline" in sys.argv)
+    if not argv:
+        print("用法: python preflight.py <作品文件夹> [--不联网]")
         return 1
-    root = os.path.abspath(sys.argv[1])
+    root = os.path.abspath(argv[0])
     if not os.path.isdir(root):
         print("✗ 找不到这个文件夹:%s" % root)
         return 1
@@ -219,16 +248,19 @@ def main():
     if errors:
         print("=" * 70)
         print("结论:**先改,别交。** 传上去也是退回。")
+        rules_note(offline)
         return 1
     if warns:
         print("=" * 70)
         print("结论:没有硬错。上面那几处**确认一下不是在收集真实身份**就能交。")
+        rules_note(offline)
         return 2
     print("=" * 70)
     print("结论:✔ 干净,可以交。")
     print()
     print("注意:这个脚本只查得了机器能查的部分。**内容红线(血腥/色情/赌博/抄袭/")
     print("政治敏感/自绘中国地图)机器查不了,那部分靠你和用户自己把关。**")
+    rules_note(offline)
     return 0
 
 

@@ -8,6 +8,9 @@
 用法:
     GUDAO_SUBMIT_TOKEN=<口令> python submit.py <作品文件夹> \
         --title "作品名字" --scary no [--dry]
+
+改编别人的作品:加 --remix-of sub-003(**必须填,而且要真的改了东西**)。
+不愿意被别人改编:加 --allow-remix no(**这不影响别人标你为来源** —— 署名是义务)。
 """
 import argparse
 import base64
@@ -67,6 +70,12 @@ def main():
     ap.add_argument("--fit", default=None, choices=FIT_CHOICES,
                     help="fixed=保持 16:9;fill=铺满屏幕")
     ap.add_argument("--cover", default=None, help="封面图片路径,可选,最多 2MB")
+    ap.add_argument("--allow-remix", dest="allow_remix", default=None,
+                    choices=("yes", "no"),
+                    help="愿不愿意让别人改编你的作品。不写就按站上的默认(愿意)")
+    ap.add_argument("--remix-of", dest="remix_of", default="",
+                    help="改编自站内哪件作品,填它的编号(如 sub-003)。"
+                         "**改编别人必须填**,而且要真的改了东西")
     ap.add_argument("--parent", default="",
                     help="要更新的作品编号;带了就是「某件的新版」")
     ap.add_argument("--dry", action="store_true",
@@ -110,6 +119,17 @@ def main():
         body["fit"] = a.fit
     if a.parent:
         body["parent"] = a.parent
+    # 交新版时,改编许可和来源沿用原作品 —— 带了会被服务端 400 顶回来。
+    # 与其让人白跑一趟,不如在这儿就说清楚。
+    if a.parent and (a.allow_remix is not None or a.remix_of):
+        print("✗ --parent(交新版)不能和 --allow-remix / --remix-of 一起用。")
+        print("  新版的改编许可和来源沿用原作品;要改这两样,去作品页上改。")
+        return 1
+    if a.allow_remix is not None:
+        # 站上只收布尔,收到字符串 "true" 会直接退回 —— 这里就转成布尔。
+        body["allow_remix"] = (a.allow_remix == "yes")
+    if a.remix_of:
+        body["remix_of"] = a.remix_of.strip()
     if a.cover:
         if not os.path.isfile(a.cover):
             print("✗ 找不到封面文件:%s" % a.cover)
@@ -133,6 +153,11 @@ def main():
     print("  用了什么  %s" % (a.ai or "(没写)"))
     print("  简介      %s" % ((a.notes[:60] + "…") if len(a.notes) > 60
                               else (a.notes or "(没写)")))
+    if a.remix_of:
+        print("  改编自    %s(会公开显示「改自某某」)" % a.remix_of)
+    if a.allow_remix is not None:
+        print("  允许改编  %s" % ("愿意" if a.allow_remix == "yes" else
+                                  "不愿意(别人仍可标你为来源,这是署名)"))
     print("  手机可玩  %s   键位 %s   画面 %s"
           % ("是" if a.mobile else "否", a.pad or "(空)", a.fit or "(没声明)"))
     if a.parent:
