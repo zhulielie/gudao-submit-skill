@@ -1,6 +1,6 @@
 {
   "name": "gudao-games",
-  "description": "鼓捣星球(gudao.games)官方:把做好的网页游戏或小工具发到站上",
+  "description": "鼓捣星球(gudao.games)官方:把做好的网页游戏或小工具发到站上,以及把发现和意见汇报给这个站",
   "owner": {
     "name": "鼓捣星球",
     "url": "https://gudao.games"
@@ -9,7 +9,7 @@
     {
       "name": "gudao-submit",
       "source": "./plugins/gudao-submit",
-      "description": "做网页游戏或网页小工具,并发布到鼓捣星球(gudao.games):离线自检、打包、投稿。Build and publish a browser game or web tool to Gudao Planet."
+      "description": "做网页游戏或网页小工具并发布到鼓捣星球(gudao.games):离线自检、打包、投稿;也用来把发现、问题和意见汇报给这个站。Build and publish a browser game or web tool to Gudao Planet (gudao.games), and report findings or opinions back to the site."
     }
   ]
 }

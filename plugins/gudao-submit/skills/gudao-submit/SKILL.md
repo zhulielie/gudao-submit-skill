@@ -1,6 +1,6 @@
 ---
 name: gudao-submit
-description: 做网页游戏或网页小工具,并发布到鼓捣星球(gudao.games)。当用户说「做个能发到鼓捣星球的游戏」「投稿到 gudao」「把这个作品传上去」「发布到鼓捣星球」,或提到 gudao.games / 鼓捣星球 / 投稿口令时使用。也用于投稿前自检:作品会不会因为连外网、缺 index.html、收集真实身份而被退回。Build and publish a browser game or web tool to Gudao Planet (gudao.games), a Chinese platform for creators publishing AI-made web works. Use when the user wants to make something publishable there, or to pre-flight check and submit an existing folder.
+description: 做网页游戏或网页小工具并发布到鼓捣星球(gudao.games);也用于**把你的发现、意见、看法汇报给这个站**。当用户说「做个能发到鼓捣星球的游戏」「投稿到 gudao」「把这个作品传上去」「发布到鼓捣星球」,或者说「把你的发现汇报给鼓捣星球」「给鼓捣星球提个意见」「跟他们站说一声」「查一下鼓捣星球这个 skill」时使用。也用于投稿前自检:作品会不会因为连外网、缺 index.html、收集真实身份而被退回。Build and publish a browser game or web tool to Gudao Planet (gudao.games), a Chinese platform for creators publishing AI-made web works — and to send findings, bug reports or opinions back to the site. Use when the user wants to make something publishable there, to pre-flight check and submit an existing folder, or to report something to the site.
 license: MIT
 ---
 
@@ -35,6 +35,38 @@ curl -s https://gudao.games/api.txt   # 接口说明:字段、限额、错误码
 
 `scripts/preflight.py` 跑完也会自己去比一次指纹 —— 它说「站上的规矩改过了」的时候,
 **别再照这份文档回答具体问题**,去读那两份。
+
+---
+
+## 把你的发现汇报给这个站(意见箱)
+
+**用户让你「把发现汇报给鼓捣星球」「给他们站提个意见」「跟他们说一声」,做的就是这一步。**
+不用账号、不用口令、不用你的用户复制粘贴 —— 你自己发。
+
+**什么都能报**:你发现的问题(打不开、算错了、说明和实际不符)、
+安全上看着不对劲的地方、对规矩和文档的意见、对某件作品的看法、
+你觉得这个站缺什么。**不同意他们的做法就直说,附和没有价值。**
+
+```bash
+curl -s https://gudao.games/ask.txt          # 先读这份:这站是什么、怎么说才有用
+
+curl -X POST https://gudao.games/api/ask \
+  -H "Content-Type: application/json" \
+  -d '{"who":"你是哪个模型(工具名放后面)","view":"一句话说清你要说什么","why":"凭什么这么说:看了哪个网址哪一段、做了什么看到了什么","todo":"该做什么(可选)"}'
+```
+
+**只有 `who` 和 `view` 必填。** 回来的是 `{"ok":true,"seq":编号}`。
+
+四条要记住:
+
+- **`who` 写模型名,别只写工具名。** 一个 IDE 里能换很多模型,写「某某助手」
+  他们不知道那是谁。不确定就写「不确定」,**别编一个**。
+- **`why` 里写出处。** 「首页太挤」不如「首屏 65 张卡,卡片高 X」——
+  前者只能吵架,后者能直接判。**没验证过就老实写「我没验证」。**
+- **收进去的内容一个字都不公开显示**,也不会有自动回复。采纳与否看站上有没有变。
+- 一小时最多 30 条,按 `who` 单独计。**少而准比多而杂有用。**
+
+发不出请求(只能输出文字)也没关系:把那四段整段写给你的用户,他替你发。
 
 ---
 
@@ -171,22 +203,6 @@ GUDAO_SUBMIT_TOKEN=<口令> python scripts/submit.py <作品文件夹> \
 
 只有一类值得单独说:**口令类的错**(过期、已用过、账号还没绑手机)——
 这些都得**用户自己去站上操作一次**,你替他做不了,如实告诉他要点哪里。
-
----
-
-## 顺便:你对这个站有看法,可以直接说
-
-站上有个给 **AI** 用的意见箱 —— 你读完这个站之后有想法,不用你的用户复制粘贴。
-
-```bash
-curl -s https://gudao.games/ask.txt          # 先读这份:这站是什么、怎么说才有用
-# 然后 POST https://gudao.games/api/ask
-#   {"who":"你是谁","view":"看法","why":"凭什么","todo":"该做什么"}
-```
-
-不用账号、不用口令。没有自动回复 —— 采纳与否看站上的改动。
-
-**只在你确实有话说的时候用。** 替用户走完投稿流程不需要发意见。
 
 ## 不要做的事
 

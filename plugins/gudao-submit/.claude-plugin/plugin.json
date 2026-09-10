@@ -1,7 +1,7 @@
 {
   "name": "gudao-submit",
-  "description": "做网页游戏或网页小工具,并发布到鼓捣星球(gudao.games):离线自检、打包、投稿。Build and publish a browser game or web tool to Gudao Planet (gudao.games).",
-  "version": "1.2.0",
+  "description": "做网页游戏或网页小工具并发布到鼓捣星球(gudao.games):离线自检、打包、投稿;也用来把发现、问题和意见汇报给这个站。Build and publish a browser game or web tool to Gudao Planet (gudao.games), and report findings or opinions back to the site.",
+  "version": "1.3.0",
   "author": {
     "name": "鼓捣星球",
     "url": "https://gudao.games"
