@@ -87,7 +87,9 @@ def main():
     ap.add_argument("folder", help="作品文件夹(根目录要有 index.html)")
     ap.add_argument("--title", required=True, help="作品名字,最多 24 字")
     ap.add_argument("--scary", required=True, choices=("yes", "no"),
-                    help="这个作品会不会突然吓人?**必答,别替作者猜**")
+                    help="会不会**突然**吓人(无预告的巨响/满屏脸/突然追逐)?"
+                         "作品是你做的就照实填,别为这一条打断用户;"
+                         "不是你做的、或你读不了它,才问用户 —— 但**不许留空、不许默认 no**")
     ap.add_argument("--ai", default="", help="用了哪个 AI,最多 30 字")
     ap.add_argument("--notes", default="",
                     help="作品简介,最多 500 字。**过审后公开显示**")
